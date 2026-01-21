@@ -299,14 +299,11 @@
             analysisResults.classList.remove('active');
             
             try {
-                // Use localhost for local development
-                const apiUrl = window.location.hostname === 'localhost' || window.location.protocol === 'file:' 
-                    ? 'http://localhost:5000' 
-                    : (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000');
+                // Use API_BASE_URL from config.js
+                const BASE_URL = API_BASE_URL;
+                console.log('Sending to:', BASE_URL + '/csv/analyze');
                 
-                console.log('Sending to:', apiUrl + '/csv/analyze');
-                
-                const response = await fetch(`${apiUrl}/csv/analyze`, {
+                const response = await fetch(`${BASE_URL}/csv/analyze`, {
                     method: 'POST',
                     body: formData
                 });
