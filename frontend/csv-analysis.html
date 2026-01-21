@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Data Analysis - Event Finance Manager</title>
+    <meta name="description" content="Upload and analyze CSV financial data with comprehensive statistical and financial insights">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="config.js"></script>
+    <style>
+        .upload-zone {
+            border: 3px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.05));
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            transform: translateY(-2px);
+        }
+        
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15));
+        }
+        
+        .analysis-section {
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        .analysis-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, var(--bg-surface), #f8fafc);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        
+        .insight-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-radius: var(--radius-full);
+            font-size: 0.9rem;
+            margin: 0.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .outlier-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
+        .category-bar {
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border);
+        }
+        
+        .category-bar-fill {
+            height: 8px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: var(--radius-full);
+            transition: width 0.5s ease;
+        }
+        
+        .json-output {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="brand-logo">
+            <span>🔷</span> EventFi
+        </a>
+        <div style="display: flex; gap: 1rem;">
+            <a href="index.html" class="btn btn-primary" style="padding: 0.5rem 1rem;">🏠 Home</a>
+            <a href="dashboard.html" class="btn btn-outline" style="padding: 0.5rem 1rem;">Dashboard</a>
+            <a href="add-event.html" class="btn btn-outline" style="padding: 0.5rem 1rem;">Add Event</a>
+        </div>
+    </nav>
+    
+    <div class="container" style="max-width: 1400px; padding: 2rem 1rem;">
+    
+        <div class="text-center mb-4">
+            <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊 CSV Data Analysis</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">
+                Upload your financial CSV for comprehensive statistical and fraud detection analysis
+            </p>
+        </div>
+        
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="uploadZone">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+            <h3 style="margin-bottom: 0.5rem;">Drop CSV file here or click to browse</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                Supports expense tracking, financial data, and transaction records
+            </p>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+            <button class="btn btn-primary" id="selectFileBtn">
+                Select CSV File
+            </button>
+        </div>
+        
+        <!-- Sample CSV Info -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">📋 Sample CSV Format</h3>
+            <pre style="background: #f1f5f9; padding: 1rem; border-radius: var(--radius-md); overflow-x: auto; font-size: 0.85rem;">date,event_id,category,amount,has_receipt,vendor
+2024-01-01,E001,Food,1200,true,Catering Co
+2024-01-02,E001,Venue,5000,true,City Hall
+2024-01-03,E001,Food,800,false,Local Shop
+2024-01-04,E001,Marketing,1500,true,Print Media</pre>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" style="display: none; text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; animation: spin 1s linear infinite;">⚙️</div>
+            <p style="color: var(--text-muted); margin-top: 1rem;">Analyzing your data...</p>
+        </div>
+        
+        <!-- Analysis Results -->
+        <div id="analysisResults" class="analysis-section">
+            
+            <!-- Dataset Summary -->
+            <div class="card mb-3">
+                <h2 style="margin-bottom: 1.5rem;">📊 Dataset Summary</h2>
+                <div class="stat-grid" id="datasetSummary"></div>
+            </div>
+            
+            <!-- Numeric Analysis -->
+            <div class="card mb-3" id="numericAnalysisSection" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">🔢 Numeric Analysis</h2>
+                <div id="numericAnalysis"></div>
+            </div>
+            
+            <!-- Categorical Analysis -->
+            <div class="card mb-3" id="categoricalAnalysisSection" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">📑 Categorical Analysis</h2>
+                <div id="categoricalAnalysis"></div>
+            </div>
+            
+            <!-- Financial Insights -->
+            <div class="card mb-3" id="financialInsightsSection" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">💰 Financial Insights</h2>
+                <div id="financialInsights"></div>
+            </div>
+            
+            <!-- Charts Section -->
+            <div class="card mb-3" id="chartsSection" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">📈 Visual Analytics</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+                    <div style="background: white; padding: 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Category Distribution</h3>
+                        <canvas id="categoryPieChart"></canvas>
+                    </div>
+                    <div style="background: white; padding: 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+                        <h3 style="margin-bottom: 1rem; color: var(--accent);">Spending by Category</h3>
+                        <canvas id="spendingBarChart"></canvas>
+                    </div>
+                </div>
+                <div style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Amount Distribution</h3>
+                    <canvas id="amountLineChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Overall Insights -->
+            <div class="card mb-3" id="overallInsightsSection" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">🎯 Key Insights & Anomalies</h2>
+                <div id="overallInsights"></div>
+            </div>
+            
+            <!-- Raw JSON Output -->
+            <div class="card">
+                <h2 style="margin-bottom: 1.5rem;">📄 Raw JSON Output</h2>
+                <button class="btn btn-outline mb-2" onclick="copyJSON()">📋 Copy JSON</button>
+                <pre class="json-output" id="jsonOutput"></pre>
+            </div>
+            
+        </div>
+        
+    </div>
+
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('csvFileInput');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const analysisResults = document.getElementById('analysisResults');
+        
+        // Drag and drop handlers
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                handleFile(files[0]);
+            } else {
+                alert('Please upload a valid CSV file');
+            }
+        });
+        
+        // Button click - stop propagation so uploadZone click doesn't also fire
+        document.getElementById('selectFileBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+        
+        // Upload zone click (but not on the button)
+        uploadZone.addEventListener('click', (e) => {
+            if (e.target.id !== 'selectFileBtn') {
+                fileInput.click();
+            }
+        });
+        
+        // File input change - the actual file handler
+        fileInput.addEventListener('change', (e) => {
+            console.log('File selected:', e.target.files);
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        async function handleFile(file) {
+            console.log('=== HANDLING FILE ===');
+            console.log('File name:', file.name);
+            console.log('File size:', file.size);
+            
+            const formData = new FormData();
+            formData.append('csvFile', file);
+            
+            loadingIndicator.style.display = 'block';
+            analysisResults.classList.remove('active');
+            
+            try {
+                // Use localhost for local development
+                const apiUrl = window.location.hostname === 'localhost' || window.location.protocol === 'file:' 
+                    ? 'http://localhost:5000' 
+                    : (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000');
+                
+                console.log('Sending to:', apiUrl + '/csv/analyze');
+                
+                const response = await fetch(`${apiUrl}/csv/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Server error:', errorData);
+                    throw new Error(errorData.details || 'Analysis failed');
+                }
+                
+                const data = await response.json();
+                console.log('SUCCESS:', data);
+                displayResults(data);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to analyze CSV: ' + error.message);
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+        
+        function displayResults(data) {
+            // Dataset Summary
+            const summaryHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Total Rows</div>
+                    <div class="stat-value">${data.dataset_summary.total_rows}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Numeric Columns</div>
+                    <div class="stat-value">${data.dataset_summary.numeric_columns.length}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Categorical Columns</div>
+                    <div class="stat-value">${data.dataset_summary.categorical_columns.length}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Date Columns</div>
+                    <div class="stat-value">${data.dataset_summary.date_columns.length}</div>
+                </div>
+            `;
+            document.getElementById('datasetSummary').innerHTML = summaryHTML;
+            
+            // Numeric Analysis
+            if (Object.keys(data.numeric_analysis).length > 0) {
+                document.getElementById('numericAnalysisSection').style.display = 'block';
+                let numericHTML = '';
+                
+                Object.entries(data.numeric_analysis).forEach(([col, stats]) => {
+                    numericHTML += `
+                        <div class="card mb-2" style="background: #f8fafc;">
+                            <h3 style="margin-bottom: 1rem; color: var(--primary);">${col}</h3>
+                            <div class="stat-grid">
+                                <div class="stat-card">
+                                    <div class="stat-label">Mean</div>
+                                    <div class="stat-value">${stats.mean}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Median</div>
+                                    <div class="stat-value">${stats.median}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Min</div>
+                                    <div class="stat-value">${stats.min}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Max</div>
+                                    <div class="stat-value">${stats.max}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Std Dev</div>
+                                    <div class="stat-value">${stats.std_dev}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Outliers</div>
+                                    <div class="stat-value" style="color: ${stats.outliers.length > 0 ? '#ef4444' : '#10b981'}">
+                                        ${stats.outliers.length}
+                                    </div>
+                                </div>
+                            </div>
+                            ${stats.outliers.length > 0 ? `
+                                <div style="margin-top: 1rem;">
+                                    <strong>Outliers Detected:</strong><br>
+                                    ${stats.outliers.slice(0, 5).map(o => 
+                                        `<span class="insight-badge outlier-badge">Row ${o.row_index}: ${o.value} (${o.method})</span>`
+                                    ).join('')}
+                                    ${stats.outliers.length > 5 ? `<span class="insight-badge">+${stats.outliers.length - 5} more</span>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('numericAnalysis').innerHTML = numericHTML;
+            }
+            
+            // Categorical Analysis
+            if (Object.keys(data.categorical_analysis).length > 0) {
+                document.getElementById('categoricalAnalysisSection').style.display = 'block';
+                let catHTML = '';
+                
+                Object.entries(data.categorical_analysis).forEach(([col, stats]) => {
+                    const maxCount = Math.max(...Object.values(stats.distribution));
+                    
+                    catHTML += `
+                        <div class="card mb-2" style="background: #f8fafc;">
+                            <h3 style="margin-bottom: 1rem; color: var(--accent);">${col}</h3>
+                            <p style="margin-bottom: 1rem;">
+                                <strong>Unique Values:</strong> ${stats.unique_values} | 
+                                <strong>Most Frequent:</strong> ${stats.most_frequent}
+                            </p>
+                            <div>
+                                ${Object.entries(stats.distribution).map(([cat, count]) => `
+                                    <div class="category-bar">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <span><strong>${cat}</strong></span>
+                                            <span>${count} (${((count / data.dataset_summary.total_rows) * 100).toFixed(1)}%)</span>
+                                        </div>
+                                        <div class="category-bar-fill" style="width: ${(count / maxCount) * 100}%"></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('categoricalAnalysis').innerHTML = catHTML;
+            }
+            
+            // Financial Insights
+            if (data.financial_insights.high_value_entries.length > 0 || 
+                Object.keys(data.financial_insights.category_wise_totals).length > 0) {
+                document.getElementById('financialInsightsSection').style.display = 'block';
+                let finHTML = '';
+                
+                if (data.financial_insights.high_value_entries.length > 0) {
+                    finHTML += `
+                        <h3 style="margin-bottom: 1rem;">🔝 High Value Transactions</h3>
+                        <div class="stat-grid mb-3">
+                            ${data.financial_insights.high_value_entries.slice(0, 6).map(entry => `
+                                <div class="stat-card" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">
+                                    <div class="stat-label">Row ${entry.row_index}</div>
+                                    <div class="stat-value" style="color: #92400e;">${entry.value}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                
+                if (Object.keys(data.financial_insights.category_wise_totals).length > 0) {
+                    const maxTotal = Math.max(...Object.values(data.financial_insights.category_wise_totals));
+                    finHTML += `
+                        <h3 style="margin-bottom: 1rem;">📊 Category-wise Totals</h3>
+                        ${Object.entries(data.financial_insights.category_wise_totals).map(([cat, total]) => `
+                            <div class="category-bar">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span><strong>${cat}</strong></span>
+                                    <span style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">${total}</span>
+                                </div>
+                                <div class="category-bar-fill" style="width: ${(total / maxTotal) * 100}%"></div>
+                            </div>
+                        `).join('')}
+                    `;
+                }
+                
+                document.getElementById('financialInsights').innerHTML = finHTML;
+            }
+            
+            // Overall Insights
+            if (data.overall_insights.length > 0) {
+                document.getElementById('overallInsightsSection').style.display = 'block';
+                const insightsHTML = data.overall_insights.map(insight => 
+                    `<span class="insight-badge">${insight}</span>`
+                ).join('');
+                document.getElementById('overallInsights').innerHTML = insightsHTML;
+            }
+            
+            // Render Charts
+            renderCharts(data);
+            
+            // JSON Output
+            document.getElementById('jsonOutput').textContent = JSON.stringify(data, null, 2);
+            
+            // Show results
+            analysisResults.classList.add('active');
+        }
+        
+        // Chart instances for cleanup
+        let pieChart, barChart, lineChart;
+        
+        function renderCharts(data) {
+            // Destroy existing charts
+            if (pieChart) pieChart.destroy();
+            if (barChart) barChart.destroy();
+            if (lineChart) lineChart.destroy();
+            
+            const colors = [
+                'rgba(99, 102, 241, 0.8)',   // Indigo
+                'rgba(168, 85, 247, 0.8)',   // Purple
+                'rgba(236, 72, 153, 0.8)',   // Pink
+                'rgba(59, 130, 246, 0.8)',   // Blue
+                'rgba(16, 185, 129, 0.8)',   // Green
+                'rgba(245, 158, 11, 0.8)',   // Amber
+                'rgba(239, 68, 68, 0.8)',    // Red
+                'rgba(6, 182, 212, 0.8)',    // Cyan
+            ];
+            
+            const borderColors = colors.map(c => c.replace('0.8', '1'));
+            
+            // Check if we have category data
+            if (data.categorical_analysis && Object.keys(data.categorical_analysis).length > 0) {
+                document.getElementById('chartsSection').style.display = 'block';
+                
+                // Find category column
+                const catCol = Object.keys(data.categorical_analysis).find(k => 
+                    k.toLowerCase().includes('category') || k.toLowerCase().includes('type')
+                ) || Object.keys(data.categorical_analysis)[0];
+                
+                if (catCol && data.categorical_analysis[catCol]) {
+                    const catData = data.categorical_analysis[catCol];
+                    const labels = Object.keys(catData.distribution);
+                    const values = Object.values(catData.distribution);
+                    
+                    // Pie Chart - Category Distribution
+                    const pieCtx = document.getElementById('categoryPieChart').getContext('2d');
+                    pieChart = new Chart(pieCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: colors.slice(0, labels.length),
+                                borderColor: borderColors.slice(0, labels.length),
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { padding: 20, font: { size: 12 } }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Bar Chart - Category Spending (if financial data exists)
+            if (data.financial_insights && Object.keys(data.financial_insights.category_wise_totals).length > 0) {
+                document.getElementById('chartsSection').style.display = 'block';
+                
+                const catTotals = data.financial_insights.category_wise_totals;
+                const labels = Object.keys(catTotals);
+                const values = Object.values(catTotals);
+                
+                const barCtx = document.getElementById('spendingBarChart').getContext('2d');
+                barChart = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Total Spending',
+                            data: values,
+                            backgroundColor: colors.slice(0, labels.length),
+                            borderColor: borderColors.slice(0, labels.length),
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Line Chart - Amount Distribution
+            if (data.numeric_analysis && Object.keys(data.numeric_analysis).length > 0) {
+                document.getElementById('chartsSection').style.display = 'block';
+                
+                const amountCol = Object.keys(data.numeric_analysis).find(k => 
+                    k.toLowerCase().includes('amount') || k.toLowerCase().includes('cost')
+                ) || Object.keys(data.numeric_analysis)[0];
+                
+                if (amountCol && data.numeric_analysis[amountCol]) {
+                    const stats = data.numeric_analysis[amountCol];
+                    
+                    // Create distribution data
+                    const lineCtx = document.getElementById('amountLineChart').getContext('2d');
+                    lineChart = new Chart(lineCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Min', 'Q1', 'Median', 'Mean', 'Q3', 'Max'],
+                            datasets: [{
+                                label: amountCol,
+                                data: [
+                                    stats.min,
+                                    stats.quartiles.Q1,
+                                    stats.median,
+                                    stats.mean,
+                                    stats.quartiles.Q3,
+                                    stats.max
+                                ],
+                                backgroundColor: [
+                                    'rgba(16, 185, 129, 0.7)',
+                                    'rgba(59, 130, 246, 0.7)',
+                                    'rgba(99, 102, 241, 0.7)',
+                                    'rgba(168, 85, 247, 0.7)',
+                                    'rgba(236, 72, 153, 0.7)',
+                                    'rgba(239, 68, 68, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(16, 185, 129, 1)',
+                                    'rgba(59, 130, 246, 1)',
+                                    'rgba(99, 102, 241, 1)',
+                                    'rgba(168, 85, 247, 1)',
+                                    'rgba(236, 72, 153, 1)',
+                                    'rgba(239, 68, 68, 1)'
+                                ],
+                                borderWidth: 2,
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                title: {
+                                    display: true,
+                                    text: 'Statistical Distribution',
+                                    font: { size: 14 }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(0,0,0,0.05)' }
+                                },
+                                x: {
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        
+        function copyJSON() {
+            const jsonText = document.getElementById('jsonOutput').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('JSON copied to clipboard!');
+            });
+        }
+    </script>
+
+</body>
+</html>

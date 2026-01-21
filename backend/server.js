@@ -19,6 +19,7 @@ app.use(cors({
 app.use(express.json());
 app.use("/events", require("./routes/eventRoutes"));
 app.use("/expenses", require("./routes/expenseRoutes"));
+app.use("/csv", require("./routes/csvAnalysisRoutes"));
 
 // Serve static files from the frontend folder
 app.use(express.static(path.join(__dirname, '../frontend')));

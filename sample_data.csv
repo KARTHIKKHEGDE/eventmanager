@@ -1,0 +1,16 @@
+date,event_id,category,amount,has_receipt,vendor
+2024-03-01,E003,Venue,120000,true,Royal Palace
+2024-03-02,E003,Food,40000,true,Premium Caterers
+2024-03-03,E003,Decoration,25000,true,Floral Arts
+2024-03-04,E003,Food,38000,true,Premium Caterers
+2024-03-05,E003,Logistics,15000,true,Event Movers
+2024-03-06,E003,Food,42000,false,Unknown Vendor
+2024-03-07,E003,Equipment,30000,true,Sound Systems Pro
+2024-03-08,E003,Decoration,60000,true,Floral Arts
+2024-03-09,E003,Food,70000,false,Premium Caterers
+2024-03-10,E003,Miscellaneous,10000,true,Gifts Shop
+2024-03-11,E003,Food,75000,false,Premium Caterers
+2024-03-12,E003,Logistics,18000,true,Event Movers
+2024-03-13,E003,Equipment,35000,true,Sound Systems Pro
+2024-03-14,E003,Miscellaneous,12000,true,Gifts Shop
+2024-03-15,E003,Food,90000,false,Premium Caterers
