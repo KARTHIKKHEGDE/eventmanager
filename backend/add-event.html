@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Manage Events - Event Finance Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Professional Navbar -->
+    <nav class="navbar">
+        <div class="brand-logo">
+            <span style="font-size: 1.8rem;">🔷</span> EventFi
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Home</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero-section"
+            style="padding: 3rem 2rem; margin-bottom: 2rem; text-align: left; align-items: flex-start;">
+            <div>
+                <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; color: #111827;">Event Finance
+                    Managers</h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">Create new events, log daily expenses, and
+                    manage your portfolio.</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+            <!-- LEFT COLUMN: CREATE EVENT -->
+            <div>
+                <div class="card">
+                    <div class="card-title">🚀 Create New Event</div>
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">Event
+                            Name</label>
+                        <input id="name" class="form-control" placeholder="e.g. Annual Tech Summit 2025">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">Total
+                            Budget (₹)</label>
+                        <input id="budget" type="number" class="form-control" placeholder="e.g. 500000">
+                    </div>
+                    <button onclick="submitNewEvent()" class="btn btn-primary w-full">Create Event</button>
+                    <p id="msg" class="mt-4 text-center" style="font-weight: 500;"></p>
+                </div>
+
+                <!-- ALL EVENTS LIST (Compact) -->
+                <div class="card">
+                    <div class="flex-row justify-between mb-4">
+                        <div class="card-title">Existing Events</div>
+                        <button onclick="loadAllEvents()" class="btn btn-outline" style="font-size: 0.8rem;">Refresh
+                            List</button>
+                    </div>
+                    <ul id="eventsList" style="list-style: none; padding: 0; max-height: 300px; overflow-y: auto;">
+                        <li style="color: var(--text-muted); text-align: center;">Click refresh to load events.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: ADD EXPENSE -->
+            <div>
+                <div class="card" style="border-top: 4px solid var(--primary);">
+                    <div class="card-title">💸 Log Expense</div>
+                    <p id="selectedEventLabel"
+                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; background: #eff6ff; padding: 0.5rem; border-radius: 4px;">
+                        Step 1: Select an event from the list on the left.
+                    </p>
+
+                    <input id="expenseEventId" type="hidden">
+
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">Amount
+                            (₹)</label>
+                        <input id="expenseAmount" type="number" class="form-control" placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label
+                            style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">Category</label>
+                        <input id="expenseCategory" class="form-control" placeholder="e.g. Venue, Catering, Logistics">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">Receipt
+                            (Optional)</label>
+                        <input id="expenseReceipt" type="file" class="form-control" style="padding: 0.5rem;">
+                    </div>
+
+                    <button onclick="addExpense()" class="btn btn-primary w-full">Add Expense</button>
+                    <p id="expenseMsg" class="mt-4 text-center"></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "https://event-finance-manager.onrender.com";
+
+        function submitNewEvent() {
+            const nameInput = document.getElementById("name");
+            const budgetInput = document.getElementById("budget");
+
+            fetch(`${BASE_URL}/events/create`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: nameInput.value,
+                    totalBudget: budgetInput.value
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const msg = document.getElementById("msg");
+                    msg.innerText = "Event Created! ID: " + data._id;
+                    msg.style.color = "#10b981";
+                    // Auto-select
+                    selectEvent(data._id, data.name);
+                    loadAllEvents();
+                })
+                .catch(err => {
+                    document.getElementById("msg").innerText = "Error creating event";
+                    console.error(err);
+                });
+        }
+
+        async function loadAllEvents() {
+            const list = document.getElementById("eventsList");
+            list.innerHTML = "<div class='text-center'>Loading...</div>";
+            try {
+                const res = await fetch(`${BASE_URL}/events`);
+                const events = await res.json();
+                list.innerHTML = "";
+
+                if (events.length === 0) {
+                    list.innerHTML = "<li class='text-center'>No events found.</li>";
+                    return;
+                }
+
+                events.forEach(e => {
+                    const li = document.createElement("li");
+                    li.className = "flex-row justify-between";
+                    li.style.padding = "0.75rem";
+                    li.style.borderBottom = "1px solid #f3f4f6";
+                    li.style.cursor = "pointer";
+                    li.style.borderRadius = "4px";
+                    li.style.marginBottom = "5px";
+
+                    li.onclick = () => selectEvent(e._id, e.name);
+
+                    li.innerHTML = `
+                        <div>
+                            <div style="font-weight: 600;">${e.name}</div>
+                            <div style="font-size: 0.75rem; color: #9ca3af;">ID: ${e._id}</div>
+                        </div>
+                        <button onclick="deleteEvent('${e._id}', event)" style="color: #ef4444; background: none; border: none; font-size: 0.8rem; cursor: pointer;">Delete</button>
+                    `;
+                    // Hover effect via js or css class
+                    li.onmouseover = () => li.style.background = "#f9f9f9";
+                    li.onmouseout = () => li.style.background = "transparent";
+
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                list.innerHTML = "Error loading events.";
+            }
+        }
+
+        function selectEvent(id, name) {
+            document.getElementById("expenseEventId").value = id;
+            const label = document.getElementById("selectedEventLabel");
+            label.innerHTML = `Selected Event: <strong>${name}</strong>`;
+            label.style.background = "#dbeafe";
+            label.style.color = "#1e40af";
+            label.style.border = "1px solid #93c5fd";
+        }
+
+        async function deleteEvent(id, event) {
+            event.stopPropagation();
+            if (!confirm("Delete this event and all its expenses?")) return;
+
+            try {
+                await fetch(`${BASE_URL}/events/delete/${id}`, { method: "DELETE" });
+                loadAllEvents();
+            } catch (err) {
+                alert("Error deleting event");
+            }
+        }
+
+        async function addExpense() {
+            const eventId = document.getElementById("expenseEventId").value;
+            const amount = document.getElementById("expenseAmount").value;
+            const category = document.getElementById("expenseCategory").value;
+            const receipt = document.getElementById("expenseReceipt").files[0];
+            const msg = document.getElementById("expenseMsg");
+
+            if (!eventId) {
+                alert("Please select an event from the list on the left first.");
+                return;
+            }
+            if (!amount || !category) {
+                msg.innerText = "Please fill in Amount and Category";
+                msg.style.color = "red";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("eventId", eventId);
+            formData.append("amount", amount);
+            formData.append("category", category);
+            if (receipt) formData.append("receipt", receipt);
+
+            try {
+                const res = await fetch(`${BASE_URL}/expenses/add`, {
+                    method: "POST",
+                    body: formData
+                });
+                if (res.ok) {
+                    msg.innerText = "Expense added successfully!";
+                    msg.style.color = "#10b981";
+                    document.getElementById("expenseAmount").value = "";
+                    document.getElementById("expenseCategory").value = "";
+                    document.getElementById("expenseReceipt").value = "";
+                } else {
+                    const errData = await res.json();
+                    msg.innerText = "Error: " + (errData.message || "Failed");
+                    msg.style.color = "red";
+                }
+            } catch (err) {
+                msg.innerText = "Error adding expense.";
+                console.error(err);
+            }
+        }
+
+        // Load events on start
+        loadAllEvents();
+    </script>
+</body>
+
+</html>

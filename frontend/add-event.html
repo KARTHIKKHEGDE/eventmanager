@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Manage Events - Event Finance Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="config.js"></script>
+    <style>
+        .event-list-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .event-list-item:hover {
+            background-color: rgba(99, 102, 241, 0.05); /* var(--primary) light */
+        }
+        .event-list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .selected-event-banner {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar animate-fade-in">
+        <div class="brand-logo">
+            <span>🔷</span> EventFi
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Home</a>
+        </div>
+    </nav>
+
+    <div class="container animate-fade-in delay-100">
+        
+        <div class="mb-4 text-center">
+            <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Finance Manager Workspace</h1>
+            <p style="color: var(--text-muted);">Manage your global event portfolio and log real-time expenses.</p>
+        </div>
+
+        <div class="grid-2">
+
+            <!-- LEFT COLUMN: CREATE & LIST -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- Create Event -->
+                <div class="card">
+                    <div class="card-title">🚀 Launch New Event</div>
+                    <div class="form-group">
+                        <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 8px; display: block; color: var(--text-muted);">Event Name</label>
+                        <input id="name" class="form-control" placeholder="e.g. Q4 Marketing Summit">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 8px; display: block; color: var(--text-muted);">Total Budget (₹)</label>
+                        <input id="budget" type="number" class="form-control" placeholder="500000">
+                    </div>
+                    <button id="btnCreateEvent" onclick="submitNewEvent()" class="btn btn-primary w-full">Create Project</button>
+                    <p id="msg" class="mt-4 text-center" style="font-size: 0.9rem;"></p>
+                </div>
+
+                <!-- ALL EVENTS LIST -->
+                <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.01);">
+                        <div class="card-title" style="margin: 0;">Active Events</div>
+                        <button id="btnRefreshEvents" onclick="loadAllEvents()" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Refresh</button>
+                    </div>
+                    <div style="max-height: 400px; overflow-y: auto;" id="eventsListWrapper">
+                        <ul id="eventsList" style="list-style: none;">
+                            <li style="padding: 2rem; text-align: center; color: var(--text-muted);">Loading portfolio...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: ADD EXPENSE -->
+            <div>
+                <div class="card" style="position: sticky; top: 100px; border-top: 4px solid var(--secondary);">
+                    
+                    <div class="card-title" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>💸</span> Log Transaction
+                    </div>
+
+                    <div id="selectionState">
+                        <p id="selectedEventLabel" 
+                           style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px dashed var(--border); text-align: center;">
+                            👈 Select an event from the list to begin.
+                        </p>
+                    </div>
+
+                    <input id="expenseEventId" type="hidden">
+
+                    <form onsubmit="event.preventDefault(); addExpense();">
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 8px; display: block; color: var(--text-muted);">Amount (₹)</label>
+                            <input id="expenseAmount" type="number" class="form-control" placeholder="0.00" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 8px; display: block; color: var(--text-muted);">Category</label>
+                            <select id="expenseCategory" class="form-control" required style="height: auto;">
+                                <option value="" disabled selected>Select Category</option>
+                                <option value="Venue">Venue</option>
+                                <option value="Catering">Catering</option>
+                                <option value="Logistics">Logistics</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Travel">Travel</option>
+                                <option value="Tech">Technology & AV</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 8px; display: block; color: var(--text-muted);">Receipt (Optional)</label>
+                            <input id="expenseReceipt" type="file" class="form-control" style="padding: 0.6rem; font-size: 0.9rem;">
+                            <small style="color: var(--text-light); display: block; margin-top: 5px;">Upload check for AI validation</small>
+                        </div>
+
+                        <button id="btnAddExpense" type="submit" class="btn btn-primary w-full" style="background: linear-gradient(135deg, var(--secondary), var(--warning));">
+                            Record Expense
+                        </button>
+                    </form>
+                    
+                    <p id="expenseMsg" class="mt-4 text-center" style="font-weight: 500; min-height: 1.5rem;"></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = API_BASE_URL;
+
+        function setLoading(btnId, isLoading) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            if (isLoading) {
+                btn.classList.add("loading");
+            } else {
+                btn.classList.remove("loading");
+            }
+        }
+
+        function submitNewEvent() {
+            const nameInput = document.getElementById("name");
+            const budgetInput = document.getElementById("budget");
+            const btnId = "btnCreateEvent"; // Need to add ID to button
+
+            setLoading(btnId, true);
+
+            fetch(`${BASE_URL}/events/create`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: nameInput.value,
+                    totalBudget: budgetInput.value
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const msg = document.getElementById("msg");
+                    msg.innerText = "Event Created Successfully!";
+                    msg.style.color = "var(--success)";
+                    
+                    nameInput.value = "";
+                    budgetInput.value = "";
+                    
+                    // Auto-select
+                    selectEvent(data._id, data.name);
+                    loadAllEvents();
+                })
+                .catch(err => {
+                    document.getElementById("msg").innerText = "Error creating event";
+                    document.getElementById("msg").style.color = "var(--danger)";
+                    console.error(err);
+                })
+                .finally(() => {
+                    setLoading(btnId, false);
+                });
+        }
+
+        async function loadAllEvents() {
+            const list = document.getElementById("eventsList");
+            const btnId = "btnRefreshEvents"; // Add ID to refresh button
+            
+            // If called via button click (optional check, but safer to just toggle if exists)
+            setLoading(btnId, true);
+            
+            list.innerHTML = "<div class='text-center' style='padding: 2rem;'>Refreshing...</div>";
+            try {
+                const res = await fetch(`${BASE_URL}/events`);
+                const events = await res.json();
+                list.innerHTML = "";
+
+                if (events.length === 0) {
+                    list.innerHTML = "<li class='text-center' style='padding: 2rem; color: var(--text-muted);'>No active events found.</li>";
+                    return;
+                }
+
+                events.forEach(e => {
+                    const li = document.createElement("li");
+                    li.className = "event-list-item";
+                    
+                    li.onclick = () => selectEvent(e._id, e.name);
+
+                    li.innerHTML = `
+                        <div>
+                            <div style="font-weight: 600; font-size: 1rem; color: var(--text-main);">${e.name}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px;">${e._id}</div>
+                        </div>
+                        <button onclick="deleteEvent('${e._id}', event)" class="btn-delete-icon" style="color: var(--text-muted); background: none; border: none; font-size: 0.9rem; cursor: pointer; transition: color 0.2s;" title="Delete">
+                            🗑
+                        </button>
+                    `;
+                    // Hover handled by css
+                    
+                    // Add hover for delete button specifically
+                    li.querySelector('button').onmouseover = function() { this.style.color = "var(--danger)"; }
+                    li.querySelector('button').onmouseout = function() { this.style.color = "var(--text-muted)"; }
+
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                list.innerHTML = "<div class='text-center' style='padding: 2rem; color: var(--danger);'>Error loading events.</div>";
+            } finally {
+                setLoading(btnId, false);
+            }
+        }
+
+        function selectEvent(id, name) {
+            document.getElementById("expenseEventId").value = id;
+            
+            const container = document.getElementById("selectionState");
+            container.innerHTML = `
+                <div class="selected-event-banner">
+                    <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--primary); font-weight: 700;">Active Workspace</div>
+                    <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">${name}</div>
+                </div>
+            `;
+            
+            // Visual feedback on list items? (Optional, maybe next iteration)
+        }
+
+        async function deleteEvent(id, event) {
+            event.stopPropagation();
+            if (!confirm("Confirm Deletion: This will wipe all associated financial records for this event.")) return;
+
+            try {
+                await fetch(`${BASE_URL}/events/delete/${id}`, { method: "DELETE" });
+                loadAllEvents();
+                
+                // If the deleted event was selected, clear selection
+                if(document.getElementById("expenseEventId").value === id) {
+                     document.getElementById("expenseEventId").value = "";
+                     document.getElementById("selectionState").innerHTML = `
+                        <p id="selectedEventLabel" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px dashed var(--border); text-align: center;">
+                            👈 Select an event from the list to begin.
+                        </p>
+                     `;
+                }
+            } catch (err) {
+                alert("Error deleting event");
+            }
+        }
+
+        async function addExpense() {
+            const eventId = document.getElementById("expenseEventId").value;
+            const amount = document.getElementById("expenseAmount").value;
+            const category = document.getElementById("expenseCategory").value;
+            const receipt = document.getElementById("expenseReceipt").files[0];
+            const msg = document.getElementById("expenseMsg");
+            const btnId = "btnAddExpense";
+
+            if (!eventId) {
+                alert("Please select an event from the list on the left first.");
+                return;
+            }
+            if (!amount || !category) {
+                msg.innerText = "Please fill in Amount and Category";
+                msg.style.color = "var(--danger)";
+                return;
+            }
+
+            msg.innerText = "Processing...";
+            msg.style.color = "var(--text-muted)";
+            setLoading(btnId, true);
+
+            const formData = new FormData();
+            formData.append("eventId", eventId);
+            formData.append("amount", amount);
+            formData.append("category", category);
+            if (receipt) formData.append("receipt", receipt);
+
+            try {
+                const res = await fetch(`${BASE_URL}/expenses/add`, {
+                    method: "POST",
+                    body: formData
+                });
+                if (res.ok) {
+                    msg.innerText = "Expense recorded successfully!";
+                    msg.style.color = "var(--success)";
+                    document.getElementById("expenseAmount").value = "";
+                    document.getElementById("expenseCategory").value = "";
+                    document.getElementById("expenseReceipt").value = "";
+                } else {
+                    const errData = await res.json();
+                    msg.innerText = "Error: " + (errData.message || "Failed");
+                    msg.style.color = "var(--danger)";
+                }
+            } catch (err) {
+                msg.innerText = "Error adding expense.";
+                console.error(err);
+            } finally {
+                setLoading(btnId, false);
+            }
+        }
+
+        // Load events on start
+        loadAllEvents();
+    </script>
+</body>
+</html>

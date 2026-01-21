@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Finance Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .role-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+        }
+
+        .role-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: var(--primary);
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: #eff6ff;
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .role-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+
+        .role-desc {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="brand-logo">
+            <span style="font-size: 1.8rem;">🔷</span> EventFi
+        </div>
+
+    </nav>
+
+    <div class="container" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center;">
+
+        <div style="text-align: center; margin-bottom: 4rem;">
+            <h1 style="font-size: 2.5rem; font-weight: 800; color: #111827; margin-bottom: 1rem;">Select Your Role</h1>
+            <p style="color: #6b7280; font-size: 1.1rem;">Choose a workspace to continue</p>
+        </div>
+
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 900px; margin: 0 auto; width: 100%;">
+
+            <!-- Card 1: Event Admin -->
+            <a href="dashboard.html" class="role-card">
+                <div class="icon-circle">📊</div>
+                <div class="role-title">Event Admin</div>
+                <div class="role-desc">Monitor project budgets, visualize expenses, and track operational metrics.</div>
+                <span class="btn btn-primary">Go to Dashboard</span>
+            </a>
+
+            <!-- Card 2: Event Finance Managers -->
+            <a href="add-event.html" class="role-card">
+                <div class="icon-circle">🛠️</div>
+                <div class="role-title">Event Finance Managers</div>
+                <div class="role-desc">Execute event operations, log daily expenses, and manage financial records.</div>
+                <span class="btn btn-outline" style="border-color: var(--primary); color: var(--primary);">Manage
+                    Operations</span>
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
